@@ -78,7 +78,11 @@ public class Camera2BasicFragment extends Fragment
      * Conversion from screen rotation to JPEG orientation.
      */
     private static final SparseIntArray ORIENTATIONS = new SparseIntArray();
-    private static final int REQUEST_CAMERA_PERMISSION = 1;
+    private static final int REQUEST_CAMERA_PERMISSION_FIRST = 0x1111;
+    private static final int REQUEST_CAMERA_PERMISSION_SECOND = 0x2222;
+
+    private static int currentRequestCameraPermission;
+
     private static final String FRAGMENT_DIALOG = "dialog";
 
     static {
@@ -421,6 +425,7 @@ public class Camera2BasicFragment extends Fragment
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container,
                              Bundle savedInstanceState) {
+        currentRequestCameraPermission = REQUEST_CAMERA_PERMISSION_FIRST;
         return inflater.inflate(R.layout.fragment_camera2_basic, container, false);
     }
 
@@ -464,14 +469,15 @@ public class Camera2BasicFragment extends Fragment
         if (shouldShowRequestPermissionRationale(Manifest.permission.CAMERA)) {
             new ConfirmationDialog().show(getChildFragmentManager(), FRAGMENT_DIALOG);
         } else {
-            requestPermissions(new String[]{Manifest.permission.CAMERA}, REQUEST_CAMERA_PERMISSION);
+            currentRequestCameraPermission = REQUEST_CAMERA_PERMISSION_FIRST;
+            requestPermissions(new String[]{Manifest.permission.CAMERA}, REQUEST_CAMERA_PERMISSION_FIRST);
         }
     }
 
     @Override
     public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions,
                                            @NonNull int[] grantResults) {
-        if (requestCode == REQUEST_CAMERA_PERMISSION) {
+        if (requestCode == REQUEST_CAMERA_PERMISSION_SECOND) {
             if (grantResults.length != 1 || grantResults[0] != PackageManager.PERMISSION_GRANTED) {
                 ErrorDialog.newInstance(getString(R.string.request_permission))
                         .show(getChildFragmentManager(), FRAGMENT_DIALOG);
@@ -602,7 +608,8 @@ public class Camera2BasicFragment extends Fragment
     private void openCamera(int width, int height) {
         if (ContextCompat.checkSelfPermission(getActivity(), Manifest.permission.CAMERA)
                 != PackageManager.PERMISSION_GRANTED) {
-            requestCameraPermission();
+            if (currentRequestCameraPermission == REQUEST_CAMERA_PERMISSION_FIRST)
+                requestCameraPermission();
             return;
         }
         setUpCameraOutputs(width, height);
@@ -1015,8 +1022,9 @@ public class Camera2BasicFragment extends Fragment
                     .setPositiveButton(android.R.string.ok, new DialogInterface.OnClickListener() {
                         @Override
                         public void onClick(DialogInterface dialog, int which) {
+                            currentRequestCameraPermission = REQUEST_CAMERA_PERMISSION_SECOND;
                             parent.requestPermissions(new String[]{Manifest.permission.CAMERA},
-                                    REQUEST_CAMERA_PERMISSION);
+                                    REQUEST_CAMERA_PERMISSION_SECOND);
                         }
                     })
                     .setNegativeButton(android.R.string.cancel,
