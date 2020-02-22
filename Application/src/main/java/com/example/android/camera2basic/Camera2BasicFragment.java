@@ -247,7 +247,6 @@ public class Camera2BasicFragment extends Fragment
 
         @Override
         public void onImageAvailable(ImageReader reader) {
-            Log.d("Mine","onImageAvailable by captureStillPicture");
             mBackgroundHandler.post(new ImageSaver(reader.acquireNextImage(), mFile));
         }
 
@@ -291,7 +290,7 @@ public class Camera2BasicFragment extends Fragment
     private CameraCaptureSession.CaptureCallback mCaptureCallback
             = new CameraCaptureSession.CaptureCallback() {
 
-        private void process(CaptureResult result, int i) {
+        private void process(CaptureResult result) {
             switch (mState) {
                 case STATE_PREVIEW: {
                     // We have nothing to do when the camera preview is working normally.
@@ -299,7 +298,6 @@ public class Camera2BasicFragment extends Fragment
                 }
                 case STATE_WAITING_LOCK: {
                     Integer afState = result.get(CaptureResult.CONTROL_AF_STATE);
-                    Log.d("Mine","[SWL] process called. afState(" + afState + "). from CB(" + i + ").");
                     if (afState == null) {
 
                     } else if (CaptureResult.CONTROL_AF_STATE_FOCUSED_LOCKED == afState ||
@@ -307,11 +305,9 @@ public class Camera2BasicFragment extends Fragment
                             CaptureResult.CONTROL_AF_STATE_INACTIVE == afState) {
                         // CONTROL_AE_STATE can be null on some devices
                         Integer aeState = result.get(CaptureResult.CONTROL_AE_STATE);
-                        Log.d("Mine","\t[SWL] process called. aeState(" + aeState + "). from CB(" + i + ").");
                         if (aeState == null ||
                                 aeState == CaptureResult.CONTROL_AE_STATE_CONVERGED) {
                             mState = STATE_PICTURE_TAKEN;
-                            Log.d("Mine","[STATE_WAITING_LOCK] captureStillPicture. afState(" + afState + "). from CB(" + i + ").");
                             captureStillPicture();
                         } else {
                             runPrecaptureSequence();
@@ -320,10 +316,8 @@ public class Camera2BasicFragment extends Fragment
                     break;
                 }
                 case STATE_WAITING_PRECAPTURE: {
-                    Log.d("Mine","[SWP] process called. from CB(" + i + ").");
                     // CONTROL_AE_STATE can be null on some devices
                     Integer aeState = result.get(CaptureResult.CONTROL_AE_STATE);
-                    Log.d("Mine","\t[SWP] process called. aeState(" + aeState + "). from CB(" + i + ").");
                     if (aeState == null ||
                             aeState == CaptureResult.CONTROL_AE_STATE_PRECAPTURE ||
                             aeState == CaptureRequest.CONTROL_AE_STATE_FLASH_REQUIRED) {
@@ -332,13 +326,10 @@ public class Camera2BasicFragment extends Fragment
                     break;
                 }
                 case STATE_WAITING_NON_PRECAPTURE: {
-                    Log.d("Mine","[SWNP] process called. from CB(" + i + ").");
                     // CONTROL_AE_STATE can be null on some devices
                     Integer aeState = result.get(CaptureResult.CONTROL_AE_STATE);
-                    Log.d("Mine","\t[SWNP] process called. aeState(" + aeState + "). from CB(" + i + ").");
                     if (aeState == null || aeState != CaptureResult.CONTROL_AE_STATE_PRECAPTURE) {
                         mState = STATE_PICTURE_TAKEN;
-                        Log.d("Mine","[STATE_WAITING_NON_PRECAPTURE] captureStillPicture. from CB(" + i + ").");
                         captureStillPicture();
                     }
                     break;
@@ -350,14 +341,14 @@ public class Camera2BasicFragment extends Fragment
         public void onCaptureProgressed(@NonNull CameraCaptureSession session,
                                         @NonNull CaptureRequest request,
                                         @NonNull CaptureResult partialResult) {
-            process(partialResult, 1);
+            process(partialResult);
         }
 
         @Override
         public void onCaptureCompleted(@NonNull CameraCaptureSession session,
                                        @NonNull CaptureRequest request,
                                        @NonNull TotalCaptureResult result) {
-            process(result, 2);
+            process(result);
         }
 
     };
@@ -852,7 +843,6 @@ public class Camera2BasicFragment extends Fragment
                 public void onCaptureCompleted(@NonNull CameraCaptureSession session,
                                                @NonNull CaptureRequest request,
                                                @NonNull TotalCaptureResult result) {
-                    Log.d("Mine","onCaptureComplete by captureStillPicture");
                     showToast("Saved: " + mFile);
                     Log.d(TAG, mFile.toString());
                     unlockFocus();
@@ -861,7 +851,6 @@ public class Camera2BasicFragment extends Fragment
 
             mCaptureSession.stopRepeating();
             mCaptureSession.abortCaptures();
-            Log.d("Camera2","call capture() by captureStillPicture");
             mCaptureSession.capture(captureBuilder.build(), CaptureCallback, null);
         } catch (CameraAccessException e) {
             e.printStackTrace();
